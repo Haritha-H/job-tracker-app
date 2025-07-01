@@ -54,6 +54,22 @@
             document.getElementById('app').innerHTML = `<div class="text-center text-red-500">Authentication Failed. Please refresh.</div>`;
         }
 
+        // --- 2. DATABASE SCHEMA DEFINITION ---
+        
+        // This section defines the structure of our data.
+        // The 'jobs' collection will hold all our job application documents.
+        // Each document will have the following fields:
+        // {
+        //   company: "string",
+        //   title: "string",
+        //   url: "string",
+        //   date: "timestamp", // The date the application was submitted
+        //   status: "string", // e.g., "Wishlist", "Applied"
+        //   otherInfo: "string",
+        //   createdAt: "timestamp" // To know when the entry was created
+        // }
+        const jobsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'jobs');
+
         // The rest of the application logic for other tasks will be added here in future tasks.
 
     </script>
