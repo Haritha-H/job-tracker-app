@@ -101,6 +101,27 @@
             }
         }
 
+        // --- 4. BACKEND API: FETCH ALL JOBS ---
+        
+        /**
+         * Fetches all job documents from Firestore.
+         * @returns {Promise<Array>} An array of job objects.
+         */
+         async function getJobs() {
+            try {
+                const querySnapshot = await getDocs(jobsCollectionRef);
+                const jobs = [];
+                querySnapshot.forEach((doc) => {
+                    jobs.push(doc.data());
+                });
+                console.log("Successfully fetched jobs:", jobs);
+                return jobs;
+            } catch (error) {
+                console.error("Error fetching jobs:", error);
+                return []; // Return an empty array on error
+            }
+        }
+
         // --- TEST CODE ---
         // This section demonstrates how to use the addJob function.
         
@@ -122,9 +143,21 @@
             }
         }
 
-        // Uncomment the line below to test the function.
+        async function testGetJobs() {
+            console.log("Running a test to fetch all jobs...");
+            const allJobs = await getJobs();
+            if (allJobs.length > 0) {
+                console.log(`Test successful! Found ${allJobs.length} job(s).`);
+                console.log("First job found:", allJobs[0]);
+            } else {
+                console.log("Test finished. No jobs found in the database.");
+            }
+        }
+
+        // Uncomment the lines below to test the functions.
         if (userId) { 
-             // testAddJob(); 
+             // await testAddJob(); // Use this to add data if your DB is empty
+             // await testGetJobs();
         }
 
     </script>
