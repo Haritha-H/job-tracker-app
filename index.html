@@ -122,6 +122,26 @@
             }
         }
 
+        // --- 5. BACKEND API: UPDATE A JOB ---
+        
+        /**
+         * Updates a specific job document in Firestore.
+         * @param {string} jobId - The ID of the job document to update.
+         * @param {object} updatedData - An object containing the fields to update.
+         * @returns {boolean} True if the update was successful, false otherwise.
+         */
+         async function updateJob(jobId, updatedData) {
+            try {
+                const jobRef = doc(jobsCollectionRef, jobId);
+                await updateDoc(jobRef, updatedData);
+                console.log(`Successfully updated job with ID: ${jobId}`);
+                return true;
+            } catch (error) {
+                console.error("Error updating job:", error);
+                return false;
+            }
+        }
+
         // --- TEST CODE ---
         // This section demonstrates how to use the addJob function.
         
@@ -154,10 +174,35 @@
             }
         }
 
+        async function testUpdateJob() {
+            console.log("Running a test to update a job...");
+            // Step 1: Create a new job to ensure we have one to update.
+            const jobIdToUpdate = await testAddJob();
+            
+            if (!jobIdToUpdate) {
+                console.log("Update test failed: Could not create a new job to test with.");
+                return;
+            }
+
+            // Step 2: Define the new data and update the job.
+            const newData = {
+                status: "Applied",
+                otherInfo: "The status has been updated by the test function."
+            };
+            const success = await updateJob(jobIdToUpdate, newData);
+
+            if (success) {
+                console.log(`Update test successful! Check Firestore for job ID ${jobIdToUpdate}.`);
+            } else {
+                console.log("Update test failed.");
+            }
+        }
+
         // Uncomment the lines below to test the functions.
         if (userId) { 
              // await testAddJob(); // Use this to add data if your DB is empty
              // await testGetJobs();
+             // await testUpdateJob();
         }
 
     </script>
