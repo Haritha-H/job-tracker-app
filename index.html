@@ -70,7 +70,62 @@
         // }
         const jobsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'jobs');
 
-        // The rest of the application logic for other tasks will be added here in future tasks.
+        // --- 3. BACKEND API: ADD A JOB ---
+        
+        /**
+         * Creates a new job document in Firestore.
+         * @param {object} jobData - The data for the new job.
+         * @returns {string} The ID of the newly created job document.
+         */
+         async function addJob(jobData) {
+            try {
+                // Create a new document reference with a unique ID
+                const newJobRef = doc(jobsCollectionRef);
+                
+                // Add the createdAt timestamp and ID to the job data
+                const finalJobData = {
+                    ...jobData,
+                    id: newJobRef.id,
+                    createdAt: serverTimestamp()
+                };
+
+                // Set the document with the new data
+                await setDoc(newJobRef, finalJobData);
+
+                console.log("Successfully added job with ID:", newJobRef.id);
+                return newJobRef.id;
+
+            } catch (error) {
+                console.error("Error adding job:", error);
+                return null;
+            }
+        }
+
+        // --- TEST CODE ---
+        // This section demonstrates how to use the addJob function.
+        
+        async function testAddJob() {
+            console.log("Running a test to add a new job...");
+            const testJob = {
+                company: "Test Company",
+                title: "Backend Developer",
+                url: "https://testcompany.com",
+                date: new Date(),
+                status: "Wishlist",
+                otherInfo: "This is a test entry from testAddJob function."
+            };
+            const newId = await addJob(testJob);
+            if (newId) {
+                console.log(`Test successful! New job created with ID: ${newId}. Check your Firestore console.`);
+            } else {
+                console.log("Test failed. See error above.");
+            }
+        }
+
+        // Uncomment the line below to test the function.
+        if (userId) { 
+             // testAddJob(); 
+        }
 
     </script>
 
