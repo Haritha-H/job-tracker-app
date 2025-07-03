@@ -12,12 +12,62 @@
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-amber-50">
 
-    <!-- The main application UI will be rendered here -->
-    <div id="app">
-        <h1 class="text-center text-2xl font-bold text-gray-500 mt-20">Loading Job Tracker...</h1>
+    <!-- FRONTEND -->
+    <div id="app" class="p-4 md:p-8">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-6 max-w-7xl mx-auto">
+            <h1 class="text-3xl md:text-4xl font-bold text-stone-800">Job Tracker</h1>
+            <button id="addJobBtn" class="bg-amber-500 text-white font-bold py-2 px-4 md:px-6 rounded-lg shadow-md hover:bg-amber-600 transition-colors">
+                + Add Job
+            </button>
+        </header>
+
+        <!-- Kanban Board -->
+        <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
+            <!-- Column: Wishlist -->
+            <div class="bg-stone-200 p-4 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4 text-center text-stone-700">Wishlist</h2>
+                <div id="wishlist-column" class="kanban-column space-y-4">
+                    <!-- Job cards will be added here by JS -->
+                </div>
+            </div>
+
+            <!-- Column: Applied -->
+            <div class="bg-stone-200 p-4 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4 text-center text-stone-700">Applied</h2>
+                <div id="applied-column" class="kanban-column space-y-4">
+                    <!-- Job cards will be added here by JS -->
+                </div>
+            </div>
+
+            <!-- Column: Interviewing -->
+            <div class="bg-stone-200 p-4 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4 text-center text-stone-700">Interviewing</h2>
+                <div id="interviewing-column" class="kanban-column space-y-4">
+                    <!-- Job cards will be added here by JS -->
+                </div>
+            </div>
+
+            <!-- Column: Offer -->
+            <div class="bg-stone-200 p-4 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4 text-center text-stone-700">Offer</h2>
+                <div id="offer-column" class="kanban-column space-y-4">
+                    <!-- Job cards will be added here by JS -->
+                </div>
+            </div>
+
+            <!-- Column: Rejected -->
+            <div class="bg-stone-200 p-4 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4 text-center text-stone-700">Rejected</h2>
+                <div id="rejected-column" class="kanban-column space-y-4">
+                    <!-- Job cards will be added here by JS -->
+                </div>
+            </div>
+        </main>
     </div>
+    <!-- END OF FRONTEND SECTION -->
 
     <!-- Firebase and App Logic -->
     <script type="module">
