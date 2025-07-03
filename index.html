@@ -24,13 +24,14 @@
         // Import necessary functions from the Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDocs, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- 1. INITIAL SETUP & CONFIGURATION (JT-1) ---
 
         // These global variables are provided by the environment.
         // DO NOT replace them with actual values.
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-job-tracker';
         
         // Initialize the Firebase app
         const app = initializeApp(firebaseConfig);
@@ -40,7 +41,8 @@
         console.log("Firebase App Initialized.");
 
         // --- 3. AUTHENTICATION ---
-        
+
+        let userId;
         // Sign in the user. This is required to have permission to read/write to the database.
         try {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -48,6 +50,7 @@
             } else {
                  await signInAnonymously(auth);
             }
+            userId = auth.currentUser.uid;
             console.log("User signed in with UID:", auth.currentUser.uid);
         } catch (error) {
             console.error("Authentication Error:", error);
@@ -142,6 +145,25 @@
             }
         }
 
+        // --- 6. BACKEND API: DELETE A JOB ---
+        
+        /**
+         * Deletes a specific job document from Firestore.
+         * @param {string} jobId - The ID of the job document to delete.
+         * @returns {boolean} True if the delete was successful, false otherwise.
+         */
+         async function deleteJob(jobId) {
+            try {
+                const jobRef = doc(jobsCollectionRef, jobId);
+                await deleteDoc(jobRef);
+                console.log(`Successfully deleted job with ID: ${jobId}`);
+                return true;
+            } catch (error) {
+                console.error("Error deleting job:", error);
+                return false;
+            }
+        }
+
         // --- TEST CODE ---
         // This section demonstrates how to use the addJob function.
         
@@ -161,6 +183,7 @@
             } else {
                 console.log("Test failed. See error above.");
             }
+            return newId;
         }
 
         async function testGetJobs() {
@@ -198,11 +221,32 @@
             }
         }
 
+        async function testDeleteJob() {
+            console.log("Running a test to delete a job...");
+            // Step 1: Create a new job to ensure we have one to delete.
+            const jobIdToDelete = await testAddJob();
+            
+            if (!jobIdToDelete) {
+                console.log("Delete test failed: Could not create a new job to test with.");
+                return;
+            }
+
+            // Step 2: Delete the job.
+            const success = await deleteJob(jobIdToDelete);
+
+            if (success) {
+                console.log(`Delete test successful! Job ID ${jobIdToDelete} was removed. Check Firestore.`);
+            } else {
+                console.log("Delete test failed.");
+            }
+        }
+
         // Uncomment the lines below to test the functions.
         if (userId) { 
              // await testAddJob(); // Use this to add data if your DB is empty
              // await testGetJobs();
              // await testUpdateJob();
+             // await testDeleteJob();
         }
 
     </script>
