@@ -73,14 +73,33 @@
     <script type="module">
         // Import necessary functions from the Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDocs, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- 1. INITIAL SETUP & CONFIGURATION (JT-1) ---
 
         // These global variables are provided by the environment.
-        // DO NOT replace them with actual values.
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const firebaseConfig = {
+    	  apiKey: "AIzaSyCmVJhW4lU7e-52yp_Mj3ABK8Ldq_xHR8M",
+    	  authDomain: "job-tracker-app-ede55.firebaseapp.com",
+    	  projectId: "job-tracker-app-ede55",
+    	  storageBucket: "job-tracker-app-ede55.firebasestorage.app",
+    	  messagingSenderId: "178854283997",
+    	  appId: "1:178854283997:web:4cc89628a2cd6a52a3e934"
+  	    };;
+
+        if (!firebaseConfig.apiKey) {
+            document.getElementById('app').innerHTML = `
+                <div class="text-center p-8">
+                    <h1 class="text-2xl font-bold text-red-600">Configuration Error</h1>
+                    <p class="text-gray-700 mt-2">Firebase configuration is missing or invalid. The application cannot start.</p>
+                    <p class="text-gray-500 mt-4">Please ensure the <code>__firebase_config</code> variable is correctly set up.</p>
+                </div>
+            `;
+            // Stop the script from executing further.
+            throw new Error("Firebase config is invalid. Halting execution.");
+        }
+
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-job-tracker';
         
         // Initialize the Firebase app
@@ -93,43 +112,55 @@
         // --- 3. AUTHENTICATION ---
 
         let userId;
+        let jobsCollectionRef;
         // Sign in the user. This is required to have permission to read/write to the database.
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is signed in.
+                const userId = user.uid;
+                console.log("User signed in with UID:", userId);
+
+            // --- 2. DATABASE SCHEMA DEFINITION ---
+        
+            // This section defines the structure of our data.
+            // The 'jobs' collection will hold all our job application documents.
+            // Each document will have the following fields:
+            // {
+            //   company: "string",
+            //   title: "string",
+            //   url: "string",
+            //   date: "timestamp", // The date the application was submitted
+            //   status: "string", // e.g., "Wishlist", "Applied"
+            //   otherInfo: "string",
+            //   createdAt: "timestamp" // To know when the entry was created
+            // }
+            jobsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'jobs');
+            } else {
+                // User is signed out.
+                console.log("User is signed out.");
+                // Optionally handle the signed-out state in the UI.
+            }
+        });
+
+        // Trigger the sign-in process
         try {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                  await signInWithCustomToken(auth, __initial_auth_token);
             } else {
                  await signInAnonymously(auth);
             }
-            userId = auth.currentUser.uid;
-            console.log("User signed in with UID:", auth.currentUser.uid);
         } catch (error) {
             console.error("Authentication Error:", error);
             document.getElementById('app').innerHTML = `<div class="text-center text-red-500">Authentication Failed. Please refresh.</div>`;
         }
 
-        // --- 2. DATABASE SCHEMA DEFINITION ---
-        
-        // This section defines the structure of our data.
-        // The 'jobs' collection will hold all our job application documents.
-        // Each document will have the following fields:
-        // {
-        //   company: "string",
-        //   title: "string",
-        //   url: "string",
-        //   date: "timestamp", // The date the application was submitted
-        //   status: "string", // e.g., "Wishlist", "Applied"
-        //   otherInfo: "string",
-        //   createdAt: "timestamp" // To know when the entry was created
-        // }
-        const jobsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'jobs');
-
         // --- 3. BACKEND API: ADD A JOB ---
         
-        /**
-         * Creates a new job document in Firestore.
-         * @param {object} jobData - The data for the new job.
-         * @returns {string} The ID of the newly created job document.
-         */
+        //
+         // Creates a new job document in Firestore.
+         // @param {object} jobData - The data for the new job.
+         // @returns {string} The ID of the newly created job document.
+         //
          async function addJob(jobData) {
             try {
                 // Create a new document reference with a unique ID
@@ -156,10 +187,10 @@
 
         // --- 4. BACKEND API: FETCH ALL JOBS ---
         
-        /**
-         * Fetches all job documents from Firestore.
-         * @returns {Promise<Array>} An array of job objects.
-         */
+        //
+         // Fetches all job documents from Firestore.
+         // @returns {Promise<Array>} An array of job objects.
+         //
          async function getJobs() {
             try {
                 const querySnapshot = await getDocs(jobsCollectionRef);
@@ -177,12 +208,12 @@
 
         // --- 5. BACKEND API: UPDATE A JOB ---
         
-        /**
-         * Updates a specific job document in Firestore.
-         * @param {string} jobId - The ID of the job document to update.
-         * @param {object} updatedData - An object containing the fields to update.
-         * @returns {boolean} True if the update was successful, false otherwise.
-         */
+        //
+         // Updates a specific job document in Firestore.
+         // @param {string} jobId - The ID of the job document to update.
+         // @param {object} updatedData - An object containing the fields to update.
+         // @returns {boolean} True if the update was successful, false otherwise.
+         //
          async function updateJob(jobId, updatedData) {
             try {
                 const jobRef = doc(jobsCollectionRef, jobId);
@@ -197,11 +228,11 @@
 
         // --- 6. BACKEND API: DELETE A JOB ---
         
-        /**
-         * Deletes a specific job document from Firestore.
-         * @param {string} jobId - The ID of the job document to delete.
-         * @returns {boolean} True if the delete was successful, false otherwise.
-         */
+        //
+         // Deletes a specific job document from Firestore.
+         // @param {string} jobId - The ID of the job document to delete.
+         // @returns {boolean} True if the delete was successful, false otherwise.
+         //
          async function deleteJob(jobId) {
             try {
                 const jobRef = doc(jobsCollectionRef, jobId);
