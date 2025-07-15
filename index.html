@@ -67,6 +67,49 @@
             </div>
         </main>
     </div>
+
+    <!-- Add Job Modal -->
+    <div id="addJobModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4">
+        <div class="bg-stone-50 p-8 rounded-lg shadow-2xl w-full max-w-lg">
+            <h2 class="text-3xl font-bold mb-6 text-stone-800">Add a New Job</h2>
+            <form id="addJobForm" class="space-y-4">
+                <div>
+                    <label for="company" class="text-lg font-medium text-stone-700">Company Name</label>
+                    <input type="text" id="company" name="company" class="mt-1 block w-full px-3 py-2 bg-white border border-stone-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500" required>
+                </div>
+                <div>
+                    <label for="title" class="text-lg font-medium text-stone-700">Role Title</label>
+                    <input type="text" id="title" name="title" class="mt-1 block w-full px-3 py-2 bg-white border border-stone-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500" required>
+                </div>
+                 <div>
+                    <label for="url" class="text-lg font-medium text-stone-700">Job Posting URL</label>
+                    <input type="url" id="url" name="url" class="mt-1 block w-full px-3 py-2 bg-white border border-stone-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500">
+                </div>
+                <div>
+                    <label for="date" class="text-lg font-medium text-stone-700">Date Applied</label>
+                    <input type="date" id="date" name="date" class="mt-1 block w-full px-3 py-2 bg-white border border-stone-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500">
+                </div>
+                 <div>
+                    <label for="status" class="text-lg font-medium text-stone-700">Status</label>
+                    <select id="status" name="status" class="mt-1 block w-full px-3 py-2 bg-white border border-stone-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500">
+                        <option>Wishlist</option>
+                        <option>Applied</option>
+                        <option>Interviewing</option>
+                        <option>Offer</option>
+                        <option>Rejected</option>
+                    </select>
+                </div>
+                 <div>
+                    <label for="otherInfo" class="text-lg font-medium text-stone-700">Other Info</label>
+                    <textarea id="otherInfo" name="otherInfo" rows="3" class="mt-1 block w-full px-3 py-2 bg-white border border-stone-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500" placeholder="e.g., Recruiter contact, notes..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-4 pt-4">
+                    <button type="button" id="cancelBtn" class="bg-stone-400 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-stone-500 transition-colors">Cancel</button>
+                    <button type="submit" class="bg-amber-500 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-amber-600 transition-colors">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <!-- END OF FRONTEND SECTION -->
 
     <!-- Firebase and App Logic -->
@@ -135,6 +178,7 @@
             //   createdAt: "timestamp" // To know when the entry was created
             // }
             jobsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'jobs');
+            initializeFrontend();
             } else {
                 // User is signed out.
                 console.log("User is signed out.");
@@ -328,6 +372,36 @@
              // await testGetJobs();
              // await testUpdateJob();
              // await testDeleteJob();
+        }
+
+        function initializeFrontend() {
+            const addJobBtn = document.getElementById('addJobBtn');
+            const addJobModal = document.getElementById('addJobModal');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const addJobForm = document.getElementById('addJobForm');
+
+            addJobBtn.addEventListener('click', () => {
+                addJobModal.classList.remove('hidden');
+            });
+
+            function hideModal() {
+                addJobModal.classList.add('hidden');
+                addJobForm.reset();
+            }
+
+            cancelBtn.addEventListener('click', hideModal);
+
+            addJobModal.addEventListener('click', (event) => {
+                if (event.target === addJobModal) {
+                    hideModal();
+                }
+            });
+
+            addJobForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                console.log('Form submitted!');
+                hideModal();
+            });
         }
 
     </script>
