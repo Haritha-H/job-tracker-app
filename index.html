@@ -10,6 +10,23 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        .kanban-column {
+            min-height: 300px;
+        }
+        /* Style for the card being dragged */
+        .dragging {
+            opacity: 0.5;
+            transform: rotate(2deg);
+        }
+        /* Style for the column being dragged over */
+        .drag-over {
+            background-color: #fde68a; /* A light yellow to indicate a drop zone */
+            border: 2px dashed #f59e0b;
+        }
+        .is-saving {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body class="bg-amber-50">
@@ -27,7 +44,7 @@
         <!-- Kanban Board -->
         <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
             <!-- Column: Wishlist -->
-            <div class="bg-stone-200 p-4 rounded-lg shadow">
+            <div id="Wishlist" class="bg-stone-200 p-4 rounded-lg shadow kanban-column-container">
                 <h2 class="text-xl font-bold mb-4 text-center text-stone-700">Wishlist</h2>
                 <div id="wishlist-column" class="kanban-column space-y-4">
                     <!-- Job cards will be added here by JS -->
@@ -35,7 +52,7 @@
             </div>
 
             <!-- Column: Applied -->
-            <div class="bg-stone-200 p-4 rounded-lg shadow">
+            <div id="Applied" class="bg-stone-200 p-4 rounded-lg shadow kanban-column-container">
                 <h2 class="text-xl font-bold mb-4 text-center text-stone-700">Applied</h2>
                 <div id="applied-column" class="kanban-column space-y-4">
                     <!-- Job cards will be added here by JS -->
@@ -43,7 +60,7 @@
             </div>
 
             <!-- Column: Interviewing -->
-            <div class="bg-stone-200 p-4 rounded-lg shadow">
+            <div id="Interviewing" class="bg-stone-200 p-4 rounded-lg shadow kanban-column-container">
                 <h2 class="text-xl font-bold mb-4 text-center text-stone-700">Interviewing</h2>
                 <div id="interviewing-column" class="kanban-column space-y-4">
                     <!-- Job cards will be added here by JS -->
@@ -51,7 +68,7 @@
             </div>
 
             <!-- Column: Offer -->
-            <div class="bg-stone-200 p-4 rounded-lg shadow">
+            <div id="Offer" class="bg-stone-200 p-4 rounded-lg shadow kanban-column-container">
                 <h2 class="text-xl font-bold mb-4 text-center text-stone-700">Offer</h2>
                 <div id="offer-column" class="kanban-column space-y-4">
                     <!-- Job cards will be added here by JS -->
@@ -59,7 +76,7 @@
             </div>
 
             <!-- Column: Rejected -->
-            <div class="bg-stone-200 p-4 rounded-lg shadow">
+            <div id="Rejected" class="bg-stone-200 p-4 rounded-lg shadow kanban-column-container">
                 <h2 class="text-xl font-bold mb-4 text-center text-stone-700">Rejected</h2>
                 <div id="rejected-column" class="kanban-column space-y-4">
                     <!-- Job cards will be added here by JS -->
@@ -381,11 +398,32 @@
          // @param {object} jobData - The data for the job.
          // @returns {HTMLElement} The job card element.
          //
-        function createJobCard(jobData) {
+        function createJobCard(jobData, isSaving = false) {
             const card = document.createElement('div');
-            card.className = 'bg-stone-50 p-4 rounded-lg shadow-sm cursor-grab active:cursor-grabbing';
+            card.className = 'bg-stone-50 p-4 rounded-lg shadow-sm';
             card.setAttribute('data-id', jobData.id);
-            card.setAttribute('draggable', true);
+
+            if (isSaving) {
+                card.classList.add('is-saving');
+            } else {
+                card.classList.add('cursor-grab', 'active:cursor-grabbing');
+                card.setAttribute('draggable', true);
+            }
+
+            card.addEventListener('dragstart', (e) => {
+                if (card.classList.contains('is-saving')) {
+                    e.preventDefault();
+                    return;
+                }
+                e.dataTransfer.setData('text/plain', card.getAttribute('data-id'));
+                setTimeout(() => {
+                    card.classList.add('dragging');
+                }, 0);
+            });
+
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+            });
 
             const company = document.createElement('h3');
             company.className = 'font-bold text-stone-800';
@@ -480,7 +518,7 @@
                 // We need a temporary ID for the card until the backend confirms the real one.
                 const tempId = `temp-${Date.now()}`;
                 const optimisticJobData = { ...jobData, id: tempId };
-                const newCard = createJobCard(optimisticJobData);
+                const newCard = createJobCard(optimisticJobData, true);
                 const columnId = `${optimisticJobData.status.toLowerCase()}-column`;
                 document.getElementById(columnId).appendChild(newCard);
 
@@ -490,6 +528,9 @@
                     if (savedJob) {
                         // 4. Once saved, update the temporary card with the real ID from the database.
                         newCard.setAttribute('data-id', savedJob.id);
+                        newCard.classList.remove('is-saving');
+                        newCard.setAttribute('draggable', true);
+                        newCard.classList.add('cursor-grab', 'active:cursor-grabbing');
                     } else {
                         // If saving failed, remove the optimistic card and show an error.
                         newCard.remove();
@@ -501,6 +542,40 @@
                     alert("An unexpected error occurred. Please try again.");
                     console.error("Error during optimistic save:", error);
                 }
+            });
+
+            // --- Drag and Drop Logic ---
+            const columns = document.querySelectorAll('.kanban-column-container');
+
+            columns.forEach(column => {
+                column.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    column.classList.add('drag-over');
+                });
+
+                column.addEventListener('dragleave', () => {
+                    column.classList.remove('drag-over');
+                });
+
+                column.addEventListener('drop', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    column.classList.remove('drag-over');
+                    
+                    const jobId = e.dataTransfer.getData('text/plain');
+                    const draggedCard = document.querySelector(`[data-id="${jobId}"]`);
+                    const dropZone = column.querySelector('.kanban-column');
+                    
+                    if (dropZone && draggedCard && !draggedCard.classList.contains('is-saving')) {
+                        dropZone.appendChild(draggedCard);
+                        
+                        // The new status is derived from the column's ID
+                        const newStatus = column.id;
+                        
+                        // Update the job in the backend
+                        await updateJob(jobId, { status: newStatus });
+                    }
+                });
             });
 
             // Initial load of jobs from the database
