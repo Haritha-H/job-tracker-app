@@ -117,7 +117,7 @@
         // Import necessary functions from the Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDocs, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDocs, updateDoc, deleteDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- 1. INITIAL SETUP & CONFIGURATION (JT-1) ---
 
@@ -221,7 +221,7 @@
                 await setDoc(newJobRef, finalJobData);
 
                 console.log("Successfully added job with ID:", newJobRef.id);
-                return newJobRef.id;
+                return finalJobData;
 
             } catch (error) {
                 console.error("Error adding job:", error);
@@ -409,7 +409,30 @@
             return card;
         }
 
-        function initializeFrontend() {
+        //
+         // Renders all job cards to their appropriate columns.
+         // @param {Array<object>} jobs - An array of job data objects.
+         //
+        function renderJobs(jobs) {
+            // Clear existing cards from all columns
+            const columns = document.querySelectorAll('.kanban-column');
+            columns.forEach(column => column.innerHTML = '');
+
+            // Create and append a card for each job
+            jobs.forEach(job => {
+                const card = createJobCard(job);
+                // Status names are lowercase in the ID (e.g., 'wishlist-column')
+                const columnId = `${job.status.toLowerCase()}-column`;
+                const column = document.getElementById(columnId);
+                if (column) {
+                    column.appendChild(card);
+                } else {
+                    console.warn(`Could not find column for status: ${job.status}`);
+                }
+            });
+        }
+
+        async function initializeFrontend() {
             const addJobBtn = document.getElementById('addJobBtn');
             const addJobModal = document.getElementById('addJobModal');
             const cancelBtn = document.getElementById('cancelBtn');
@@ -432,11 +455,57 @@
                 }
             });
 
-            addJobForm.addEventListener('submit', (event) => {
+            addJobForm.addEventListener('submit', async (event) => {
                 event.preventDefault();
-                console.log('Form submitted!');
+                const formData = new FormData(addJobForm);
+                const jobData = Object.fromEntries(formData.entries());
+                
+                // Sanitize the date before doing anything else
+                if (jobData.date) {
+                    const jsDate = new Date(jobData.date);
+                    if (!isNaN(jsDate.getTime())) {
+                        jobData.date = Timestamp.fromDate(jsDate);
+                    } else {
+                        delete jobData.date;
+                    }
+                } else {
+                    delete jobData.date;
+                }
+
+
+                // 1. Immediately close the modal for a fast user experience.
                 hideModal();
+
+                // 2. Create the card and add it to the UI right away.
+                // We need a temporary ID for the card until the backend confirms the real one.
+                const tempId = `temp-${Date.now()}`;
+                const optimisticJobData = { ...jobData, id: tempId };
+                const newCard = createJobCard(optimisticJobData);
+                const columnId = `${optimisticJobData.status.toLowerCase()}-column`;
+                document.getElementById(columnId).appendChild(newCard);
+
+                // 3. In the background, save the data to the database.
+                try {
+                    const savedJob = await addJob(jobData);
+                    if (savedJob) {
+                        // 4. Once saved, update the temporary card with the real ID from the database.
+                        newCard.setAttribute('data-id', savedJob.id);
+                    } else {
+                        // If saving failed, remove the optimistic card and show an error.
+                        newCard.remove();
+                        alert("Error: Could not save the job. Please try again.");
+                    }
+                } catch (error) {
+                    // Handle any unexpected errors during the save process.
+                    newCard.remove();
+                    alert("An unexpected error occurred. Please try again.");
+                    console.error("Error during optimistic save:", error);
+                }
             });
+
+            // Initial load of jobs from the database
+            const jobs = await getJobs();
+            renderJobs(jobs);
 
             // --- TEST: Create a sample job card ---
             const sampleJob = {
@@ -445,9 +514,9 @@
                 title: 'Frontend Developer',
                 url: 'https://example.com'
             };
-            // uncomment below line to test Job card creation
+            // uncomment below lines to test Job card creation
             // const sampleCard = createJobCard(sampleJob);
-            document.getElementById('wishlist-column').appendChild(sampleCard);
+            // document.getElementById('wishlist-column').appendChild(sampleCard);
         }
 
     </script>
