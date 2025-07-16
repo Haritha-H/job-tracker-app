@@ -400,7 +400,7 @@
          //
         function createJobCard(jobData, isSaving = false) {
             const card = document.createElement('div');
-            card.className = 'bg-stone-50 p-4 rounded-lg shadow-sm';
+            card.className = 'bg-stone-50 p-4 rounded-lg shadow-sm relative';
             card.setAttribute('data-id', jobData.id);
 
             if (isSaving) {
@@ -425,8 +425,21 @@
                 card.classList.remove('dragging');
             });
 
+            // --- Add Delete Button ---
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'absolute top-1 right-2 text-stone-400 hover:text-red-500 font-bold';
+            deleteBtn.innerHTML = '&times;';
+            deleteBtn.addEventListener('click', async () => {
+                const jobId = card.getAttribute('data-id');
+                // Optimistic UI update: remove the card immediately
+                card.remove();
+                // In the background, delete from the database
+                await deleteJob(jobId);
+            });
+            card.appendChild(deleteBtn);
+
             const company = document.createElement('h3');
-            company.className = 'font-bold text-stone-800';
+            company.className = 'font-bold text-stone-800 pr-4';
             company.textContent = jobData.company;
             card.appendChild(company);
 
